@@ -1,0 +1,63 @@
+# Free, local stack: Laravel API/admin + WordPress + MariaDB + Mailpit (catches all outgoing mail).
+# Set DB_ROOT_PASSWORD and DTC_API_KEY in .env (see SETUP.md); there are no defaults on purpose.
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: dtc
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+
+  laravel:
+    build: .
+    command: sh -c "composer install --no-interaction && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_DATABASE: dtc
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_ROOT_PASSWORD}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      DTC_API_KEY: ${DTC_API_KEY:?set DTC_API_KEY}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  wordpress:
+    image: wordpress:6-php8.5-apache
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: ${DB_ROOT_PASSWORD}
+      WORDPRESS_DB_NAME: dtc
+      WORDPRESS_CONFIG_EXTRA: |
+        define('DTC_API_URL', 'http://laravel:8000/api');
+        define('DTC_API_KEY', '${DTC_API_KEY}');
+    volumes:
+      - wp_data:/var/www/html
+      - ./wordpress/plugins/dtc-connector:/var/www/html/wp-content/plugins/dtc-connector
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  db_data:
+  wp_data:

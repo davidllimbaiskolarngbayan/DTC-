@@ -1,0 +1,11 @@
+﻿PHPUnit 10.5.66 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.12
+Configuration: C:\xampp\htdocs\wfa-local\phpunit.xml
+
+..................................................                50 / 50 (100%)
+
+Time: 00:14.546, Memory: 72.00 MB
+
+OK, but there were issues!
+Tests: 50, Assertions: 355, PHPUnit Deprecations: 1.
