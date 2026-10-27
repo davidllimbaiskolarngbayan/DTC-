@@ -9,11 +9,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('claims', function (Blueprint $table) {
-            $table->foreignId('assigned_to')->nullable()->after('created_by')->constrained('users')->nullOnDelete();
-            $table->timestamp('assigned_at')->nullable()->after('assigned_to');
-            $table->index(['status', 'created_at']);
-        });
+        if (! Schema::hasColumn('claims', 'assigned_to')) {
+            Schema::table('claims', function (Blueprint $table) {
+                $table->foreignId('assigned_to')->nullable()->after('created_by')->constrained('users')->nullOnDelete();
+            });
+        }
+
+        if (! Schema::hasColumn('claims', 'assigned_at')) {
+            Schema::table('claims', function (Blueprint $table) {
+                $table->timestamp('assigned_at')->nullable()->after('assigned_to');
+            });
+        }
+
+        if (! Schema::hasIndex('claims', ['status', 'created_at'])) {
+            Schema::table('claims', function (Blueprint $table) {
+                $table->index(['status', 'created_at']);
+            });
+        }
+
+        if (Schema::hasTable('claim_staff_notifications')) {
+            return;
+        }
 
         Schema::create('claim_staff_notifications', function (Blueprint $table) {
             $table->id();

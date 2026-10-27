@@ -10,6 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('claim_notification_recipients')) {
+            return;
+        }
+
         Schema::create('claim_notification_recipients', function (Blueprint $table) {
             $table->foreignId('user_id')->primary()->constrained()->cascadeOnDelete();
             $table->timestamps();

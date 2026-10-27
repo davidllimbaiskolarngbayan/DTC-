@@ -8,14 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('claims', function (Blueprint $table) {
-            $table->date('incident_date')->nullable()->after('description');
-            $table->string('affected_tyres', 160)->nullable()->after('incident_date');
-        });
+        if (! Schema::hasColumn('claims', 'incident_date')) {
+            Schema::table('claims', function (Blueprint $table) {
+                $table->date('incident_date')->nullable()->after('description');
+            });
+        }
 
-        Schema::table('claim_histories', function (Blueprint $table) {
-            $table->text('customer_message')->nullable()->after('note');
-        });
+        if (! Schema::hasColumn('claims', 'affected_tyres')) {
+            Schema::table('claims', function (Blueprint $table) {
+                $table->string('affected_tyres', 160)->nullable()->after('incident_date');
+            });
+        }
+
+        if (! Schema::hasColumn('claim_histories', 'customer_message')) {
+            Schema::table('claim_histories', function (Blueprint $table) {
+                $table->text('customer_message')->nullable()->after('note');
+            });
+        }
     }
 
     public function down(): void
