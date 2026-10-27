@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Dashboard') - {{ config('dtc.brand_name') }}</title>
 
+    <link rel="icon" type="image/svg+xml" href="{{ asset('/images/dtc-favicon.svg') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="{{ asset('/css/app.css') }}" rel="stylesheet">
     <style>
