@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+public/build
+public/hot
+storage
+tests
+.phpunit.result.cache
+compose*.yaml
+docker-compose*.yaml
+SETUP.md
+DEPLOY.md

@@ -21,6 +21,8 @@ Market-neutral Warranty (DTC) app: Laravel admin + API, with a WordPress connect
 Set `DB_ROOT_PASSWORD` and `DTC_API_KEY` in `.env`, run `docker compose up -d --build`, then `docker compose exec laravel php artisan dtc:create-admin you@example.com`.
 Laravel: http://localhost:8000, WordPress: http://localhost:8080, Mailpit: http://localhost:8025.
 
+For a public Docker VM deployment with HTTPS and persistent data, follow [DEPLOY.md](./DEPLOY.md).
+
 ## API (header `X-DTC-Key` required)
 
 - `POST /api/register` - fields as in `app/Support/WarrantyRules.php`, optional `invoice` file.
