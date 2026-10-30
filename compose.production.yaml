@@ -1,0 +1,113 @@
+name: dtc-production
+
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
+      MARIADB_DATABASE: dtc
+      MARIADB_USER: dtc_app
+      MARIADB_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env.production}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/production-initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  laravel:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DB_HOST: db
+      DB_DATABASE: dtc
+      DB_USERNAME: dtc_app
+      DB_PASSWORD: ${DB_APP_PASSWORD}
+    command: sh -c "php artisan migrate --force && apache2-foreground"
+    volumes:
+      - laravel_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 80) ? 0 : 1);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DB_HOST: db
+      DB_DATABASE: dtc
+      DB_USERNAME: dtc_app
+      DB_PASSWORD: ${DB_APP_PASSWORD}
+    command: php artisan schedule:work
+    volumes:
+      - laravel_storage:/var/www/html/storage
+    depends_on:
+      laravel:
+        condition: service_healthy
+
+  wordpress:
+    image: wordpress:6-php8.5-apache
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: dtc_app
+      WORDPRESS_DB_PASSWORD: ${DB_APP_PASSWORD}
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://${WP_DOMAIN}');
+        define('WP_SITEURL', 'https://${WP_DOMAIN}');
+        define('DTC_API_URL', 'http://laravel/api');
+        define('DTC_API_KEY', '${DTC_API_KEY:?Set DTC_API_KEY in .env.production}');
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+          $_SERVER['HTTPS'] = 'on';
+        }
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress/plugins/dtc-connector:/var/www/html/wp-content/plugins/dtc-connector:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env.production}
+      WP_DOMAIN: ${WP_DOMAIN:?Set WP_DOMAIN in .env.production}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      laravel:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+
+volumes:
+  db_data:
+  laravel_storage:
+  wordpress_data:
+  caddy_data:
+  caddy_config:
