@@ -1,0 +1,9 @@
+{$APP_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy laravel:80
+}
+
+{$WP_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy wordpress:80
+}
